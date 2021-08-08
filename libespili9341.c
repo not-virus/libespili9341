@@ -8,7 +8,18 @@
  * for the esp8266 microcontroller written purely in C
  */
 
-#include <stdio.h>
 #include "libespili9341.h"
 
-// TODO function implementations go here
+static const char* TAG = "libespili9341"
+
+esp_err_t init_display() {
+
+    // Ensure SPI initializes correctly
+    if (init_spi() != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    
+
+    return ESP_OK;
+}

@@ -10,7 +10,47 @@
 #ifndef __LIBESPILI9341_H__
 #define __LIBESPILI9341_H__
 
-// ILI9341 command set
+#include "freertos/FreeRTOS.h"
+#include "esp_log.h"
+#include "esp_err.h"
+
+#include "driver/gpio.h"
+#include "driver/spi.h"
+
+// This library uses SPI to communicate with the display. These values must be
+//  defined for the library to work.
+#ifndef ILI9341_PIN_MISO
+#error ILI9341_PIN_MISO not defined
+#endif
+
+#ifndef ILI9341_PIN_MOSI
+#error ILI9341_PIN_MOSI not defined
+#endif
+
+#ifndef ILI9341_PIN_CLK
+#error ILI9341_PIN_CLK not defined
+#endif
+
+#ifndef ILI9341_PIN_DC
+#error ILI9341_PIN_DC not defined
+#endif
+
+// These aren't strictly necessary, but may be useful later or for other
+//  applications
+/*#ifndef ILI9341_PIN_CS
+#error ILI9341_PIN_CS not defined
+#endif
+
+#ifndef ILI9341_PIN_RST
+#error ILI9341_PIN_RST not defined
+#endif
+
+#ifndef ILI9341_PIN_LITE
+#error ILI9341_PIN_LITE not defined
+#endif
+*/
+
+// ILI9341 Level 1 command set
 #define ILI9341_NOP 0x00 // No operation
 #define ILI9341_SWRESET 0x01 // Software reset
 #define ILI9341_RDDID 0x09 // Read display identification
@@ -65,7 +105,7 @@
 #define ILI9341_RDID2 0xDB // Read ID2
 #define ILI9341_RDID3 0xDC // Read ID3
 
-// Extended command set
+// Level 2 command set
 #define ILI9341_RGBIFSIGCTL 0xB0 // RGB interface signal control
 #define ILI9341_FRMCTLNORM 0xB1 // Frame control (in Normal Mode)
 #define ILI9341_FRMCTLPART 0xB2 // Frame control (in Partial Mode)
@@ -101,5 +141,17 @@
 #define ILI9341_DIGGAMCTL2 0xE3 // Digital gamma control 2
 
 #define ILI9341_IFACECTL 0xF6 // Interface control
+
+// Extended register command set
+#define ILI9341_PWRCTLA 0xCB // Power control A
+#define ILI9341_PWRCTLB 0xCF // Power control B
+#define ILI9341_DRVTMGCTLA1 0xE8 // Driver timing control A
+#define ILI9341_DRVTMGCTLA2 0xE9 //    "      "      "    "
+#define ILI9341_DRVTMGCTLB 0xEA // Driver timing control B
+#define ILI9341_POSCTL 0xED // Power on sequence control
+#define ILI9341_EN3G 0xF2 // Enable 3G
+#define ILI9341_PRCTL 0xF7 // Pump ratio control
+
+esp_error_t init_display();
 
 #endif
