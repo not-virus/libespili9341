@@ -10,6 +10,10 @@
 #ifndef __LIBESPILI9341_H__
 #define __LIBESPILI9341_H__
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_err.h"
@@ -19,7 +23,7 @@
 
 // This library uses SPI to communicate with the display. These values must be
 //  defined for the library to work.
-#ifndef ILI9341_PIN_MISO
+/*#ifndef ILI9341_PIN_MISO
 #error ILI9341_PIN_MISO not defined
 #endif
 
@@ -33,7 +37,7 @@
 
 #ifndef ILI9341_PIN_DC
 #error ILI9341_PIN_DC not defined
-#endif
+#endif*/
 
 // These aren't strictly necessary, but may be useful later or for other
 //  applications
@@ -152,6 +156,17 @@
 #define ILI9341_EN3G 0xF2 // Enable 3G
 #define ILI9341_PRCTL 0xF7 // Pump ratio control
 
-esp_error_t init_display();
+typedef struct {
+    uint8_t mfgr_id;
+    uint8_t driver_ver_id;
+    uint8_t driver_id;
+} disp_id_info_t;
+
+esp_err_t init_spi();
+esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len);
+esp_err_t spi_send_command(uint8_t cmd);
+esp_err_t ili_get_info(disp_id_info_t* disp_info);
+esp_err_t init_display();
+
 
 #endif

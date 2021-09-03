@@ -1,0 +1,35 @@
+menu "libespili9341 Configuration"
+
+    config ILI9341_PIN_MISO
+        int "MISO GPIO number"
+        range 0 16
+        default 12
+        help
+            Defines the pin used as the MISO signal in SPI communication with
+            the IlI9341 display.
+
+    config ILI9341_PIN_MOSI
+        int "MOSI GPIO number"
+        range 0 16
+        default 13
+        help
+            Defines the pin used as the MOSI signal in SPI communication with
+            the IlI9341 display.
+        
+    config ILI9341_PIN_CLK
+        int "SCLK GPIO number"
+        range 0 16
+        default 14
+        help
+            Defines the pin used as the SCLK (serial clock) signal in SPI
+            communication with the IlI9341 display.
+
+    config ILI9341_PIN_DC
+        int "D/C GPIO number"
+        range 0 16
+        default 4
+        help
+            Defines the pin used for the D/C (data/command) signal in
+            communication with the IlI9341 display.
+
+endmenu
