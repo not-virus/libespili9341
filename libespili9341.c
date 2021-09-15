@@ -24,14 +24,21 @@ typedef enum {
     SPI_RECV
 } spi_master_mode_t;
 
-esp_err_t conv_arr_uint8_uint32(uint8_t* s, uint32_t len, uint32_t* d);
+esp_err_t conv_arr_uint8_uint32_right(uint8_t* s, uint32_t len, uint32_t* d);
+esp_err_t conv_arr_uint8_uint32_left(uint8_t* s, uint32_t len, uint32_t* d);
+void reverse_uint8_array(uint8_t* arr, uint32_t len);
 void reverse_uint8_array(uint8_t* arr, uint32_t len);
 void reverse_uint16_array(uint16_t* arr, uint32_t len);
 
+/**
+ * Initializes the ESP8266 hardware SPI interface with the following settings:
+ *  - //FIXME list settings
+ */
 esp_err_t init_spi() {
     ESP_LOGI(TAG, "init spi");
     spi_config_t spi_config;
     spi_config.interface.val = SPI_DEFAULT_INTERFACE;
+    spi_config.interface.byte_tx_order = SPI_BYTE_ORDER_MSB_FIRST;
     spi_config.intr_enable.val = SPI_MASTER_DEFAULT_INTR_ENABLE;
     spi_config.mode = SPI_MASTER_MODE;
     spi_config.clk_div = SPI_2MHz_DIV;     // Math is okay, but may be too fast
@@ -68,6 +75,18 @@ esp_err_t init_spi() {
     return tmp;
 }
 
+/**
+ * Sends a 1-byte command followed by \p len bytes of data over the SPI
+ * interface.
+ * 
+ * NOTICE: init_spi() must be called once to initialize the SPI interface before
+ * this function can be used!
+ * 
+ * @param cmd a 1-byte command for the SPI device
+ * @param data an array of bytes of data for the SPI device
+ * @param len the length of the data array
+ * @return ESP_OK if transmission successful, else ESP_FAIL
+ */
 esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len) {
 
     ESP_LOGI(TAG, "allocate memory for spi_trans_t and clear");
@@ -88,15 +107,15 @@ esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len) {
     trans.bits.addr = 0;
     trans.addr = NULL;
 
-    ESP_LOGI(TAG, "reverse data array");
-    reverse_uint8_array(data, len);
+    //ESP_LOGI(TAG, "reverse data array");
+    //reverse_uint8_array(data, len);
 
     ESP_LOGI(TAG, "allocate memory for uint32_t array");
     // Convert data to uint32_t array
     uint32_t* new_data = (uint32_t*) malloc(len * sizeof(*new_data));
 
     ESP_LOGI(TAG, "copy uint8_t data into new uint32_t array");
-    conv_arr_uint8_uint32(data, len, new_data);
+    conv_arr_uint8_uint32_left(data, len, new_data);
 
     ESP_LOGI(TAG, "set length of data and data in spi_trans_t");
     // Convert len to reflect new length
@@ -117,21 +136,28 @@ esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len) {
     gpio_set_level(2, 1);
     #endif
 
+    ESP_LOGI(TAG, "free temporary uint32_t pointer");
+    free(new_data);
+
     if (res == ESP_OK) {
         ESP_LOGI(TAG, "transmission successful");
     } else {
         ESP_LOGE(TAG, "spi transmission failed");
     }
 
-    ESP_LOGI(TAG, "free temporary uint32_t pointer");
-
-    free(new_data);
-
     ESP_LOGI(TAG, "return");
-
     return res;
 }
 
+/**
+ * Sends a 1-byte command over the SPI interface.
+ * 
+ * NOTICE: init_spi() must be called once to initialize the SPI interface before
+ * this function can be used!
+ * 
+ * @param cmd a 1-byte command for the SPI device
+ * @return ESP_OK if transmission successful, else ESP_FAIL
+ */
 esp_err_t spi_send_command(uint8_t cmd) {
 
     ESP_LOGI(TAG, "allocate memory for spi_trans_t and clear");
@@ -176,10 +202,15 @@ esp_err_t spi_send_command(uint8_t cmd) {
     }
 
     ESP_LOGI(TAG, "return");
-
     return res;
 }
 
+/**
+ * Reverses a uint8_t array
+ * 
+ * @param arr a uint8_t array
+ * @param len the number of uint8_t elements (bytes) in @p arr
+ */
 void reverse_uint8_array(uint8_t* arr, uint32_t len) {
     uint32_t start = 0;
     uint32_t end = len - 1;
@@ -192,6 +223,12 @@ void reverse_uint8_array(uint8_t* arr, uint32_t len) {
     }
 }
 
+/**
+ * Reverses a uint16_t array
+ * 
+ * @param arr a uint16_t array
+ * @param len the number of uint16_t elements in @p arr
+ */
 void reverse_uint16_array(uint16_t* arr, uint32_t len) {
     size_t size = sizeof(*arr);
     uint32_t start = 0;
@@ -205,7 +242,23 @@ void reverse_uint16_array(uint16_t* arr, uint32_t len) {
     }
 }
 
-esp_err_t conv_arr_uint8_uint32(uint8_t* s, uint32_t len, uint32_t* d) {
+/**
+ * Converts a uint8_t array to a uint32_t array and aligns the source data to
+ * the right of the destination array
+ *   i.e. {0x01, 0x02, 0x03} -> {0x00010203}
+ *
+ * NOTICE: This function uses pointers and pointer/offset arithmetic. It is
+ * absolutely not safe. However many elements (in this case bytes) of the source
+ * array are specified by len to be copied is how many this function will
+ * attempt to copy. If len is larger than the actual size of s, undefined
+ * behavior and/or a segfault is/are absolutely possible. USE WITH CARE.
+ * 
+ * @param s source array
+ * @param len len of source array
+ * @param d destination array
+ * @return ESP_OK
+ */
+esp_err_t conv_arr_uint8_uint32_right(uint8_t* s, uint32_t len, uint32_t* d) {
 
     // FIXME Possibly hardcode for speed?
     uint8_t sizeof_s = sizeof(*s);
@@ -225,7 +278,8 @@ esp_err_t conv_arr_uint8_uint32(uint8_t* s, uint32_t len, uint32_t* d) {
     
     // Copy source array into destination array
     size_t src_index;
-    for (size_t dest_index = 0; dest_index < len / (double) type_ratio; dest_index++) {
+    for (size_t dest_index = 0; dest_index < len / (double) type_ratio;
+            dest_index++) {
         size_t m = dest_index * type_ratio;
         if (dest_index == 0) {
             src_index = offset;
@@ -233,21 +287,81 @@ esp_err_t conv_arr_uint8_uint32(uint8_t* s, uint32_t len, uint32_t* d) {
             src_index = 0;
         }
         for (; src_index < type_ratio; src_index++) {
-            /*if (m + src_index >= len) {   // Shouldn't be necessary for right-aligned data
-                break;
-            }*/
-            *(d + dest_index) |= (*(s + ((src_index - offset) + m)) << (((type_ratio - src_index) - 1) * sizeof_s * 8));
+            *(d + dest_index)|= (*(s + ((src_index - offset) + m))
+                << (((type_ratio - src_index) - 1) * sizeof_s * 8));
         }
     }
 
     return ESP_OK;
 }
 
-esp_err_t ili_get_info(disp_id_info_t* disp_info) {
+/**
+ * Converts a uint8_t array to a uint32_t array and aligns the source data to
+ * the left of the destination array
+ *   i.e. {0x01, 0x02, 0x03} -> {0x01020300} 
+ * 
+ * NOTICE: This function uses pointers and pointer/offset arithmetic. It is
+ * absolutely not safe. However many elements (in this case bytes) of the source
+ * array are specified by len to be copied is how many this function will
+ * attempt to copy. If len is larger than the actual size of s, undefined
+ * behavior and/or a segfault is/are absolutely possible. USE WITH CARE.
+ * 
+ * @param s source array
+ * @param len len of source array
+ * @param d destination array
+ * @return ESP_OK
+ */
+esp_err_t conv_arr_uint8_uint32_left(uint8_t* s, uint32_t len, uint32_t* d) {
+
+    // FIXME Possibly hardcode for speed?
+    uint8_t sizeof_s = sizeof(*s);
+    uint8_t sizeof_d = sizeof(*d);
+
+    // Get ratio of destination data width to source data width
+    uint32_t type_ratio = sizeof_d / sizeof_s;
+
+    // Size of destination array in bytes
+    size_t dest_size = (size_t) sizeof_d * ceil(len / (double) type_ratio);
+
+    // Clear all memory in array range
+    memset(d, 0x0, dest_size);
+
+    // Copy source array into destination array
+    for (size_t dest_index = 0; dest_index < len / (double) type_ratio;
+            dest_index++) {
+        size_t m = dest_index * type_ratio;
+        for (size_t src_index = 0; src_index < type_ratio; src_index++) {
+            if (m + src_index >= len) {
+                break;
+            }
+            *(d + dest_index) |= (*(s + (src_index + m))
+                << (((type_ratio - src_index) - 1) * sizeof_s * 8));
+        }
+    }
+
     return ESP_OK;
 }
 
+/**
+ * Gets basic ID info from the ILI9341 display
+ * 
+ * @param disp_info an object of disp_id_info_t that will be populated with info
+ * from the display
+ * @return ESP_OK
+ */
+esp_err_t ili_get_info(disp_id_info_t* disp_info) {
+    //FIXME not implemented
+    return ESP_OK;
+}
+
+/**
+ * Initializes the display with default settings
+ * 
+ * @return ESP_OK if initialization successful, else ESP_FAIL
+ */
 esp_err_t init_display() {
+
+    //FIXME not implement
 
     ESP_LOGI(TAG, "init spi");
 
