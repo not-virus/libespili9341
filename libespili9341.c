@@ -76,8 +76,7 @@ esp_err_t init_spi() {
 }
 
 /**
- * Sends a 1-byte command followed by \p len bytes of data over the SPI
- * interface.
+ * Sends a 1-byte command followed by len bytes of data over the SPI interface
  * 
  * NOTICE: init_spi() must be called once to initialize the SPI interface before
  * this function can be used!
@@ -209,7 +208,7 @@ esp_err_t spi_send_command(uint8_t cmd) {
  * Reverses a uint8_t array
  * 
  * @param arr a uint8_t array
- * @param len the number of uint8_t elements (bytes) in @p arr
+ * @param len the number of uint8_t elements (bytes) in arr
  */
 void reverse_uint8_array(uint8_t* arr, uint32_t len) {
     uint32_t start = 0;
@@ -227,7 +226,7 @@ void reverse_uint8_array(uint8_t* arr, uint32_t len) {
  * Reverses a uint16_t array
  * 
  * @param arr a uint16_t array
- * @param len the number of uint16_t elements in @p arr
+ * @param len the number of uint16_t elements in arr
  */
 void reverse_uint16_array(uint16_t* arr, uint32_t len) {
     size_t size = sizeof(*arr);
@@ -296,8 +295,8 @@ esp_err_t conv_arr_uint8_uint32_right(uint8_t* s, uint32_t len, uint32_t* d) {
 }
 
 /**
- * Converts a uint8_t array to a uint32_t array and aligns the source data to
- * the left of the destination array
+ * Converts a uint8_t array s to a uint32_t array d and left-aligns the
+ * data in d
  *   i.e. {0x01, 0x02, 0x03} -> {0x01020300} 
  * 
  * NOTICE: This function uses pointers and pointer/offset arithmetic. It is
