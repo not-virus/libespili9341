@@ -11,6 +11,7 @@
 #include "libespili9341.h"
 
 #define WIRE_DEBUG // DEBUGGING, please remove
+#define DEBUG_PIN 0
 
 #define ILI9341_PIN_MISO CONFIG_ILI9341_PIN_MISO
 #define ILI9341_PIN_MOSI CONFIG_ILI9341_PIN_MOSI
@@ -65,11 +66,11 @@ esp_err_t init_spi() {
     gpio_config_t trig_gpio_cfg;
     trig_gpio_cfg.intr_type = GPIO_INTR_DISABLE;
     trig_gpio_cfg.mode = GPIO_MODE_OUTPUT;
-    trig_gpio_cfg.pin_bit_mask = (1 << 2);
+    trig_gpio_cfg.pin_bit_mask = (1 << DEBUG_PIN);
     trig_gpio_cfg.pull_down_en = 0;
     trig_gpio_cfg.pull_up_en = 0;
     gpio_config(&trig_gpio_cfg);
-    gpio_set_level(2, 1);
+    gpio_set_level(DEBUG_PIN, 1);
     #endif
 
     return tmp;
@@ -128,11 +129,11 @@ esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len) {
 
     ESP_LOGI(TAG, "transmit spi data to device");
     #ifdef WIRE_DEBUG   // DEBUGGING, please remove
-    gpio_set_level(2, 0);
+    gpio_set_level(DEBUG_PIN, 1);
     #endif
     esp_err_t res = spi_trans(HSPI_HOST, &trans);
     #ifdef WIRE_DEBUG   // DEBUGGING, please remove
-    gpio_set_level(2, 1);
+    gpio_set_level(DEBUG_PIN, 0);
     #endif
 
     ESP_LOGI(TAG, "free temporary uint32_t pointer");
@@ -187,11 +188,11 @@ esp_err_t spi_send_command(uint8_t cmd) {
 
     ESP_LOGI(TAG, "transmit spi data to device");
     #ifdef WIRE_DEBUG   // DEBUGGING, please remove
-    gpio_set_level(2, 0);
+    gpio_set_level(DEBUG_PIN, 1);
     #endif
     esp_err_t res = spi_trans(HSPI_HOST, &trans);
     #ifdef WIRE_DEBUG   // DEBUGGING, please remove
-    gpio_set_level(2, 1);
+    gpio_set_level(DEBUG_PIN, 0);
     #endif
 
     if (res == ESP_OK) {
@@ -203,6 +204,18 @@ esp_err_t spi_send_command(uint8_t cmd) {
     ESP_LOGI(TAG, "return");
     return res;
 }
+
+/**
+ * Reads len bytes from the SPI interface and places them in buf
+ * 
+ * @param len the number of bytes to read from the device
+ * @param buf a buffer of length len
+ */
+void spi_read(unsigned char* buf, uint16_t len) {
+    // FIXME
+    return;
+}
+
 
 /**
  * Reverses a uint8_t array
@@ -349,7 +362,14 @@ esp_err_t conv_arr_uint8_uint32_left(uint8_t* s, uint32_t len, uint32_t* d) {
  * @return ESP_OK
  */
 esp_err_t ili_get_info(disp_id_info_t* disp_info) {
-    //FIXME not implemented
+    // FIXME extract byte count to global constant
+
+    spi_send_command(ILI9341_RDDID);
+    unsigned char* disp_info_vect = (unsigned char*) malloc(4 * sizeof(char));
+    spi_read(disp_info_vect, 4);
+    disp_info->mfgr_id = (uint8_t) disp_info_vect[1];
+    disp_info->driver_ver_id = (uint8_t) disp_info_vect[2];
+    disp_info->driver_id = (uint8_t) disp_info_vect[3];
     return ESP_OK;
 }
 
@@ -370,6 +390,8 @@ esp_err_t init_display() {
     }
 
     ESP_LOGI(TAG, "spi init successful");
+
+    ESP_LOGI(TAG, "init display");
 
     ESP_LOGI(TAG, "getting display info");
 
