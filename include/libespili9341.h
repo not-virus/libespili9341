@@ -19,7 +19,7 @@
 #include "esp_err.h"
 
 #include "driver/gpio.h"
-#include "driver/spi.h"
+#include "libespezspi.h"
 
 // This library uses SPI to communicate with the display. These values must be
 //  defined for the library to work.
@@ -162,11 +162,8 @@ typedef struct {
     uint8_t driver_id;
 } disp_id_info_t;
 
-esp_err_t init_spi();
-esp_err_t spi_send_command_with_data(uint8_t cmd, uint8_t* data, uint32_t len);
-esp_err_t spi_send_command(uint8_t cmd);
-esp_err_t ili_get_info(disp_id_info_t* disp_info);
 esp_err_t init_display();
+esp_err_t ili_get_info(disp_id_info_t* disp_info);
 
 
 #endif
